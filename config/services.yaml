@@ -1,0 +1,49 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    _instanceof:
+        VTinnovations\SchemaOrg\Schema\NodeProviderInterface:
+            tags: ['vtinnovations_schema.node_provider']
+
+    VTinnovations\SchemaOrg\:
+        resource: '../src/'
+        exclude:
+            - '../src/VtinnovationsSchemaOrgBundle.php'
+            - '../src/ContaoManager/'
+            - '../src/DependencyInjection/'
+            - '../src/Schema/SchemaContext.php'          # value object built per request
+            - '../src/Schema/SchemaGraph.php'            # value object built per request
+            - '../src/Schema/NodeProviderInterface.php'  # interface
+            - '../src/Config/Paths.php'                  # scalar arg, defined below
+
+    # The builder receives every tagged provider and sorts them by getPriority().
+    # Public so the BE module can pull it from the container.
+    VTinnovations\SchemaOrg\Schema\SchemaBuilder:
+        public: true
+        arguments:
+            $providers: !tagged_iterator 'vtinnovations_schema.node_provider'
+
+    VTinnovations\SchemaOrg\Config\SchemaConfig:
+        public: true
+
+    VTinnovations\SchemaOrg\Controller\PreviewController:
+        public: true
+
+    # ── Licensing (paid-only, contao-plugins.de / v-t.one) ──────────────────
+    # Paths + LicenseManager are public so the BE_MOD callback can fetch them.
+    VTinnovations\SchemaOrg\Config\Paths:
+        public: true
+        arguments:
+            $scratchDir: '%vtinnovations_schema.scratch_dir%'
+
+    VTinnovations\SchemaOrg\Security\LicenseVerifier:
+        arguments:
+            $client: '@http_client'
+
+    VTinnovations\SchemaOrg\Security\LicenseManager:
+        public: true
+
+    VTinnovations\SchemaOrg\Security\LicenseGuard: ~
