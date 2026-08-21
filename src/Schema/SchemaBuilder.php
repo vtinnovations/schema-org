@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-/**
- * @package   vtinnovations/schema-org
- * @author    V&T Innovations
- * @license   LGPL-3.0-or-later
- * @copyright V&T Innovations 2026
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
  */
 
 namespace VTinnovations\SchemaOrg\Schema;
@@ -15,10 +17,16 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Input;
 use Contao\PageModel;
 use Symfony\Component\HttpFoundation\Request;
+use VTinnovations\SchemaOrg\Site\StatusEvaluator;
 
 /**
  * Turns a resolved front end page into a cross-linked schema.org @graph by
  * running every tagged {@see NodeProviderInterface} against a shared graph.
+ *
+ * The graph is the licensed output of this extension, so the decision is
+ * enforced here as well as at the response listener. Anything calling this
+ * service directly — the backend preview, another bundle, a command — gets the
+ * same empty graph when the installation is not authorised.
  */
 final class SchemaBuilder
 {
@@ -30,6 +38,7 @@ final class SchemaBuilder
      */
     public function __construct(
         private readonly ContaoFramework $framework,
+        private readonly StatusEvaluator $evaluator,
         iterable $providers,
     ) {
         $providers = $providers instanceof \Traversable ? iterator_to_array($providers) : $providers;
@@ -40,6 +49,10 @@ final class SchemaBuilder
     public function buildFor(PageModel $page, Request $request): SchemaGraph
     {
         $graph = new SchemaGraph();
+
+        if (!$this->evaluator->current()->isEntitled()) {
+            return $graph;
+        }
 
         $context = $this->createContext($page, $request);
         if ($context === null) {

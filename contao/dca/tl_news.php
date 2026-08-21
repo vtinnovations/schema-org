@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-/**
- * @package   vtinnovations/schema-org
- * @author    V&T Innovations
- * @license   LGPL-3.0-or-later
- * @copyright V&T Innovations 2026
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
  */
 
 use Contao\CoreBundle\DataContainer\PaletteManipulator;
@@ -24,6 +26,7 @@ $GLOBALS['TL_DCA']['tl_news']['fields'] += [
     'schema_articleType' => [
         'inputType' => 'select',
         'options' => ['NewsArticle', 'Article', 'BlogPosting', 'ReportageNewsArticle', 'OpinionNewsArticle'],
+        'reference' => &$GLOBALS['TL_LANG']['tl_news']['schema_articleTypeOptions'],
         'eval' => ['includeBlankOption' => true, 'tl_class' => 'w50'],
         'sql' => "varchar(32) NOT NULL default ''",
     ],

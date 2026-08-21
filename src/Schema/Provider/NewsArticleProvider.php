@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-/**
- * @package   vtinnovations/schema-org
- * @author    V&T Innovations
- * @license   LGPL-3.0-or-later
- * @copyright V&T Innovations 2026
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
  */
 
 namespace VTinnovations\SchemaOrg\Schema\Provider;
@@ -77,10 +79,13 @@ final class NewsArticleProvider implements NodeProviderInterface
             'url' => $ctx->pageUrl,
             'datePublished' => date('c', $published),
             'dateModified' => date('c', $modified),
-            'inLanguage' => $ctx->language(),
             'isPartOf' => $graph->ref($ctx->webPageId()),
             'mainEntityOfPage' => $graph->ref($ctx->webPageId()),
         ];
+
+        if ($ctx->language() !== '') {
+            $node['inLanguage'] = $ctx->language();
+        }
 
         $teaser = trim(strip_tags((string) ($news['teaser'] ?? '')));
         if ($teaser !== '') {

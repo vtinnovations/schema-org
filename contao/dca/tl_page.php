@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
-/**
- * @package   vtinnovations/schema-org
- * @author    V&T Innovations
- * @license   LGPL-3.0-or-later
- * @copyright V&T Innovations 2026
+/*
+ * Schema.org Structured Data
  *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
+ */
+
+/**
  * Adds the site-wide schema settings to root pages and per-page schema
  * overrides to every other page type.
  */
@@ -121,6 +125,7 @@ $GLOBALS['TL_DCA']['tl_page']['fields'] += [
     'schema_webPageType' => [
         'inputType' => 'select',
         'options' => ['WebPage', 'AboutPage', 'ContactPage', 'CollectionPage', 'ProfilePage', 'FAQPage', 'QAPage', 'ItemPage', 'SearchResultsPage', 'CheckoutPage'],
+        'reference' => &$GLOBALS['TL_LANG']['tl_page']['schema_webPageTypeOptions'],
         'eval' => ['includeBlankOption' => true, 'tl_class' => 'w50'],
         'sql' => "varchar(32) NOT NULL default ''",
     ],

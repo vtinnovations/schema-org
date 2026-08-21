@@ -14,10 +14,19 @@ services:
             - '../src/VtinnovationsSchemaOrgBundle.php'
             - '../src/ContaoManager/'
             - '../src/DependencyInjection/'
+            - '../src/Serializer/'                       # stateless helpers
             - '../src/Schema/SchemaContext.php'          # value object built per request
             - '../src/Schema/SchemaGraph.php'            # value object built per request
             - '../src/Schema/NodeProviderInterface.php'  # interface
             - '../src/Config/Paths.php'                  # scalar arg, defined below
+            - '../src/Site/DomainInventory.php'          # interface, aliased below
+            - '../src/Site/HostName.php'                 # value object
+            - '../src/Site/InstallationStatus.php'       # value object
+            - '../src/Intake/SealedPackage.php'          # value object
+            - '../src/Intake/PackageRejected.php'        # exception
+            - '../src/Operation/Outcome.php'             # value object
+            - '../src/Remote/ExchangeFailure.php'        # exception
+            - '../src/Remote/PackageSource.php'          # interface, aliased below
 
     # The builder receives every tagged provider and sorts them by getPriority().
     # Public so the BE module can pull it from the container.
@@ -29,21 +38,40 @@ services:
     VTinnovations\SchemaOrg\Config\SchemaConfig:
         public: true
 
+    # Instantiated by Contao via the BE_MOD callback, so it reads services from
+    # the container rather than being injected.
     VTinnovations\SchemaOrg\Controller\PreviewController:
         public: true
 
-    # ── Licensing (paid-only, contao-plugins.de / v-t.one) ──────────────────
-    # Paths + LicenseManager are public so the BE_MOD callback can fetch them.
     VTinnovations\SchemaOrg\Config\Paths:
-        public: true
         arguments:
             $scratchDir: '%vtinnovations_schema.scratch_dir%'
 
-    VTinnovations\SchemaOrg\Security\LicenseVerifier:
+    # Configured hosts come from the page tree.
+    VTinnovations\SchemaOrg\Site\DomainInventory: '@VTinnovations\SchemaOrg\Site\RootPageDomains'
+
+    # Read by the preview module and by the settings section.
+    VTinnovations\SchemaOrg\Site\StatusEvaluator:
+        public: true
+
+    # Rendered and driven from the tl_settings DCA callbacks.
+    VTinnovations\SchemaOrg\DataContainer\SettingsPanel:
+        public: true
+        arguments:
+            $security: '@security.helper'
+            $csrfTokenManager: '@contao.csrf.token_manager'
+            $csrfTokenName: '%contao.csrf_token_name%'
+
+    VTinnovations\SchemaOrg\Controller\PackageIntakeController:
+        public: true
+        tags: ['controller.service_arguments']
+
+    VTinnovations\SchemaOrg\Remote\ExchangeClient:
         arguments:
             $client: '@http_client'
 
-    VTinnovations\SchemaOrg\Security\LicenseManager:
-        public: true
+    VTinnovations\SchemaOrg\Remote\PackageSource: '@VTinnovations\SchemaOrg\Remote\ExchangeClient'
 
-    VTinnovations\SchemaOrg\Security\LicenseGuard: ~
+    VTinnovations\SchemaOrg\Remote\UsageSignal:
+        arguments:
+            $client: '@http_client'

@@ -2,12 +2,34 @@
 
 declare(strict_types=1);
 
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
+ */
+
 $GLOBALS['TL_LANG']['tl_page']['schema_legend'] = 'Schema.org / Strukturierte Daten';
 
 $GLOBALS['TL_LANG']['tl_page']['schema_orgTypeOptions'] = [
     'Organization' => 'Organisation',
     'LocalBusiness' => 'Lokales Unternehmen (mit Adresse/Öffnungszeiten)',
     'none' => 'Keine Organisation ausgeben',
+];
+
+$GLOBALS['TL_LANG']['tl_page']['schema_webPageTypeOptions'] = [
+    'WebPage' => 'Webseite (allgemein)',
+    'AboutPage' => 'Über-uns-Seite',
+    'ContactPage' => 'Kontaktseite',
+    'CollectionPage' => 'Übersichtsseite (Liste/Sammlung)',
+    'ProfilePage' => 'Profilseite',
+    'FAQPage' => 'FAQ-Seite',
+    'QAPage' => 'Frage-und-Antwort-Seite',
+    'ItemPage' => 'Detailseite (einzelnes Objekt)',
+    'SearchResultsPage' => 'Suchergebnisseite',
+    'CheckoutPage' => 'Kassenseite (Checkout)',
 ];
 
 $labels = [
@@ -19,10 +41,10 @@ $labels = [
     'schema_orgSameAs' => ['sameAs (Profil-URLs)', 'Social-Media-/Wikipedia-/Profil-URLs, je eine pro Zeile.'],
     'schema_orgPhone' => ['Telefon', 'Wird als telephone und ContactPoint ausgegeben.'],
     'schema_orgEmail' => ['E-Mail', 'Wird als email und ContactPoint ausgegeben.'],
-    'schema_orgStreet' => ['Straße und Hausnummer', ''],
-    'schema_orgPostal' => ['PLZ', ''],
-    'schema_orgCity' => ['Ort', ''],
-    'schema_orgRegion' => ['Region/Bundesland', ''],
+    'schema_orgStreet' => ['Straße und Hausnummer', 'Straße und Hausnummer der Postanschrift.'],
+    'schema_orgPostal' => ['PLZ', 'Postleitzahl der Postanschrift.'],
+    'schema_orgCity' => ['Ort', 'Ort bzw. Stadt der Postanschrift.'],
+    'schema_orgRegion' => ['Region/Bundesland', 'Region, Bundesland oder Kanton der Postanschrift.'],
     'schema_orgCountry' => ['Ländercode', 'Zweistelliger ISO-Code, z. B. DE.'],
     'schema_geoLat' => ['Breitengrad (Latitude)', 'Nur für lokales Unternehmen.'],
     'schema_geoLng' => ['Längengrad (Longitude)', 'Nur für lokales Unternehmen.'],

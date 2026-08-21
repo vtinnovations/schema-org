@@ -3,20 +3,32 @@
     "type": "contao-bundle",
     "description": "Schema.org Structured Data — automatic JSON-LD (@graph) for Contao 5, tuned for AI search engines (GEO/AEO)",
     "license": "LGPL-3.0-or-later",
+    "version": "2.0.0",
     "authors": [
         {
-            "name": "V&T Innovations Team"
+            "name": "V&T Innovations"
         }
     ],
     "require": {
         "php": "^8.2",
+        "ext-json": "*",
+        "ext-sodium": "*",
         "contao/core-bundle": "^5.3",
         "symfony/http-foundation": "^6.4 || ^7.0",
         "symfony/http-kernel": "^6.4 || ^7.0",
         "symfony/http-client": "^6.4 || ^7.0",
         "symfony/http-client-contracts": "^3.0",
         "symfony/event-dispatcher": "^6.4 || ^7.0",
+        "symfony/security-bundle": "^6.4 || ^7.0",
+        "symfony/security-csrf": "^6.4 || ^7.0",
+        "psr/log": "^2.0 || ^3.0",
         "doctrine/dbal": "^3.6 || ^4.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5 || ^11.0"
+    },
+    "suggest": {
+        "ext-intl": "Needed to accept internationalised domain names when activating a licence"
     },
     "conflict": {
         "contao/core-bundle": "<5.3"
@@ -25,6 +37,16 @@
         "psr-4": {
             "VTinnovations\\SchemaOrg\\": "src/"
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "VTinnovations\\SchemaOrg\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-standalone": "php tools/run-tests.php",
+        "build-release": "php tools/build-release.php"
     },
     "extra": {
         "contao-manager-plugin": "VTinnovations\\SchemaOrg\\ContaoManager\\Plugin"

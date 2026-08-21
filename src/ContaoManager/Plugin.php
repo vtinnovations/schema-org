@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-/**
- * @package   vtinnovations/schema-org
- * @author    V&T Innovations
- * @license   LGPL-3.0-or-later
- * @copyright V&T Innovations 2026
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
  */
 
 namespace VTinnovations\SchemaOrg\ContaoManager;
@@ -17,10 +19,14 @@ use Contao\FaqBundle\ContaoFaqBundle;
 use Contao\ManagerPlugin\Bundle\BundlePluginInterface;
 use Contao\ManagerPlugin\Bundle\Config\BundleConfig;
 use Contao\ManagerPlugin\Bundle\Parser\ParserInterface;
+use Contao\ManagerPlugin\Routing\RoutingPluginInterface;
 use Contao\NewsBundle\ContaoNewsBundle;
+use Symfony\Component\Config\Loader\LoaderResolverInterface;
+use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Routing\RouteCollection;
 use VTinnovations\SchemaOrg\VtinnovationsSchemaOrgBundle;
 
-final class Plugin implements BundlePluginInterface
+final class Plugin implements BundlePluginInterface, RoutingPluginInterface
 {
     public function getBundles(ParserInterface $parser): array
     {
@@ -35,5 +41,20 @@ final class Plugin implements BundlePluginInterface
                     ContaoFaqBundle::class,
                 ]),
         ];
+    }
+
+    public function getRouteCollection(LoaderResolverInterface $resolver, KernelInterface $kernel): RouteCollection|null
+    {
+        $file = \dirname(__DIR__, 2) . '/config/routes.yaml';
+        $loader = $resolver->resolve($file);
+
+        if (false === $loader) {
+            return null;
+        }
+
+        /** @var RouteCollection|null $collection */
+        $collection = $loader->load($file);
+
+        return $collection;
     }
 }

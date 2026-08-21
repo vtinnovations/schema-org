@@ -1,0 +1,15 @@
+# The address the licence server pushes replacement packages to.
+#
+# It is public on purpose: the caller is a server, not a logged-in person, so
+# there is no session and no browser token to check. Authentication is a
+# signature over the method, this exact path, the request metadata and a hash of
+# the body, verified against a pinned key inside the controller's operation.
+#
+# No method restriction is declared, so a GET reaches the controller and is
+# answered with 405 and an Allow header rather than a 404.
+vtinnovations_schema_org_package_intake:
+    path: /rest/api/v1/schema-org-license-updater
+    defaults:
+        _controller: VTinnovations\SchemaOrg\Controller\PackageIntakeController
+        _token_check: false
+        _bypass_maintenance: true

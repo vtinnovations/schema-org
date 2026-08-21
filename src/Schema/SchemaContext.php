@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-/**
- * @package   vtinnovations/schema-org
- * @author    V&T Innovations
- * @license   LGPL-3.0-or-later
- * @copyright V&T Innovations 2026
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
  */
 
 namespace VTinnovations\SchemaOrg\Schema;
@@ -55,10 +57,23 @@ final class SchemaContext
         return $this->pageUrl . '#primaryentity';
     }
 
+    /**
+     * The page language, falling back to the language of its site root.
+     *
+     * Returns an empty string when neither is set. Callers then omit
+     * "inLanguage" rather than guessing: naming the wrong language in
+     * structured data is worse than not naming one.
+     */
     public function language(): string
     {
-        $lang = (string) $this->page->language;
+        foreach ([$this->page->language, $this->rootPage->language] as $candidate) {
+            $language = trim((string) $candidate);
 
-        return $lang !== '' ? $lang : 'de';
+            if ($language !== '') {
+                return $language;
+            }
+        }
+
+        return '';
     }
 }

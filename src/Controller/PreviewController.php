@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-/**
- * @package   vtinnovations/schema-org
- * @author    V&T Innovations
- * @license   LGPL-3.0-or-later
- * @copyright V&T Innovations 2026
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
  */
 
 namespace VTinnovations\SchemaOrg\Controller;
 
-use Contao\Controller;
 use Contao\CoreBundle\Framework\Adapter;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Input;
@@ -19,21 +20,26 @@ use Contao\PageModel;
 use Contao\System;
 use Symfony\Component\HttpFoundation\Request;
 use VTinnovations\SchemaOrg\Schema\SchemaBuilder;
-use VTinnovations\SchemaOrg\Security\LicenseManager;
+use VTinnovations\SchemaOrg\Site\InstallationStatus;
+use VTinnovations\SchemaOrg\Site\StatusEvaluator;
 
 /**
- * BE_MOD callback "Schema.org". A license-gated dashboard styled in the V&T
- * house look (self-contained, theme-agnostic, scoped under #vtschema):
+ * BE_MOD callback "Schema.org": a read-only preview of the JSON-LD that the
+ * front end response listener injects, with one-click validator links.
  *
- *   - not licensed  → activation gate only (nothing else renders)
- *   - licensed      → license status card + JSON-LD preview tool with links to
- *                     the Google Rich Results test and the schema.org validator
+ * The preview shows licensed output, so it is gated like the front end. When
+ * the installation is not authorised the screen says so once and points at
+ * Contao → Settings, where licences are managed — this module has no licence
+ * controls of its own and never sees a key.
  *
- * Contao instantiates this via `new` — services are pulled from the container
+ * Contao instantiates this via `new`, so services are pulled from the container
  * (declared public).
  */
 final class PreviewController
 {
+    /** Language file holding this module's texts. */
+    private const LANGUAGE_FILE = 'vtinnovations_schema';
+
     /** @var array<string, string> */
     private array $lang = [];
 
@@ -42,58 +48,30 @@ final class PreviewController
         $this->initLang();
 
         $container = System::getContainer();
-        /** @var LicenseManager $license */
-        $license = $container->get(LicenseManager::class);
 
-        $request = $container->get('request_stack')->getCurrentRequest();
-        $notice = '';
+        /** @var StatusEvaluator $evaluator */
+        $evaluator = $container->get(StatusEvaluator::class);
+        $status = $evaluator->current();
 
-        if ($request instanceof Request && $request->isMethod('POST')) {
-            if ('save_license' === (string) $request->request->get('vts_action')) {
-                if ($license->activate((string) $request->request->get('license_key', ''), $request->getHost())) {
-                    Controller::redirect($request->getRequestUri()); // PRG into the unlocked dashboard
-                }
-                $notice = $this->alert('err', $license->lastMessage() ?: $this->t('license_invalid'));
-            }
+        if (!$status->isEntitled()) {
+            return $this->renderLocked();
         }
 
-        // Daily background re-check so a revocation/expiry takes effect on its own.
-        if ($request instanceof Request && $license->isCacheStale()) {
-            $license->refresh($request->getHost());
-        }
-
-        if (!$license->isLicensed()) {
-            return $this->renderGate($notice);
-        }
-
-        return $this->renderDashboard($container, $license, $notice);
+        return $this->renderDashboard($container, $status);
     }
 
-    private function renderGate(string $notice): string
+    private function renderLocked(): string
     {
-        $token = $this->esc($this->csrfToken());
-        $key = $this->esc((System::getContainer()->get(LicenseManager::class))->getLicenseKey());
-
         return '<div id="tl_buttons"></div>' . $this->styles()
             . '<div id="vtschema">'
             . '<h1 class="vts-head">' . $this->t('title') . '</h1>'
-            . '<p class="vts-sub">' . $this->t('license_locked') . '</p>'
-            . $notice
-            . '<div class="vts-grid"><div class="vts-card">'
-            . '<div class="vts-card-h">' . $this->t('license_h') . '</div>'
-            . '<div class="vts-card-d">' . $this->t('license_d') . '</div>'
-            . '<form method="post" data-turbo="false">'
-            . '<input type="hidden" name="REQUEST_TOKEN" value="' . $token . '">'
-            . '<input type="hidden" name="vts_action" value="save_license">'
-            . '<div class="vts-field"><label>' . $this->t('license_key_label') . '</label>'
-            . '<input type="text" name="license_key" class="vts-input" value="' . $key . '" autocomplete="off" spellcheck="false"></div>'
-            . '<button type="submit" class="vts-btn">' . $this->t('license_btn') . '</button>'
-            . '</form>'
-            . '<p class="vts-muted" style="margin:14px 0 0;font-size:12px">' . $this->t('license_cta') . ' <a href="https://v-t.one" target="_blank" rel="noreferrer">v-t.one</a></p>'
-            . '</div></div></div>';
+            . '<p class="vts-sub">' . $this->t('subtitle') . '</p>'
+            . '<div class="vts-alert vts-alert--warn">' . $this->t('locked') . ' '
+            . '<a href="' . $this->esc($this->settingsUrl()) . '">' . $this->t('locked_link') . '</a>'
+            . '</div></div>';
     }
 
-    private function renderDashboard(object $container, LicenseManager $license, string $notice): string
+    private function renderDashboard(object $container, InstallationStatus $status): string
     {
         /** @var ContaoFramework $framework */
         $framework = $container->get('contao.framework');
@@ -109,14 +87,12 @@ final class PreviewController
 
         $options = $this->pageOptions($pageAdapter, $selectedId);
         $result = $this->renderResult($pageAdapter, $builder, $selectedId);
-        $status = $this->licenseStatus($license);
 
         return '<div id="tl_buttons"></div>' . $this->styles()
             . '<div id="vtschema">'
             . '<h1 class="vts-head">' . $this->t('title') . '</h1>'
             . '<p class="vts-sub">' . $this->t('subtitle') . '</p>'
-            . $notice
-            . $status
+            . $this->statusLine($status)
             . '<div class="vts-card">'
             . '<div class="vts-card-h">' . $this->t('preview_h') . '</div>'
             . '<div class="vts-card-d">' . $this->t('preview_d') . '</div>'
@@ -132,19 +108,25 @@ final class PreviewController
             . '</div></div>';
     }
 
-    private function licenseStatus(LicenseManager $license): string
+    /**
+     * Read-only summary. The key never appears in full, and licence changes
+     * happen in Contao → Settings, not here.
+     */
+    private function statusLine(InstallationStatus $status): string
     {
-        if ($license->isBypassed()) {
-            return $this->alert('warn', $this->t('license_bypass'));
+        return '<div class="vts-alert vts-alert--ok">'
+            . $this->t('active') . ' — ' . $this->esc((string) $status->matchedHost)
+            . ' · ' . $this->esc($status->maskedKey)
+            . '</div>';
+    }
+
+    private function settingsUrl(): string
+    {
+        try {
+            return System::getContainer()->get('router')->generate('contao_backend', ['do' => 'settings']);
+        } catch (\Throwable) {
+            return '/contao?do=settings';
         }
-
-        $expires = $license->getExpiresAt();
-        $when = null !== $expires ? date('d.m.Y', $expires) : $this->t('license_lifetime');
-        $key = $license->getLicenseKey();
-        $masked = $key !== '' ? substr($key, 0, 4) . '••••' . substr($key, -4) : '';
-
-        return $this->alert('ok', sprintf('%s — %s: %s · %s: %s',
-            $this->t('license_active'), $this->t('license_key_label'), $this->esc($masked), $this->t('license_until'), $when));
     }
 
     private function pageOptions(Adapter $pageAdapter, int $selectedId): string
@@ -180,8 +162,9 @@ final class PreviewController
 
         try {
             $url = $page->getAbsoluteUrl();
-        } catch (\Throwable $e) {
-            return $this->alert('err', $this->t('err_nourl') . ' (' . $this->esc($e->getMessage()) . ')');
+        } catch (\Throwable) {
+            // The reason stays internal: an exception message can carry paths.
+            return $this->alert('err', $this->t('err_nourl'));
         }
 
         $graph = $builder->buildFor($page, Request::create($url));
@@ -196,7 +179,7 @@ final class PreviewController
         $validator = 'https://validator.schema.org/#url=' . $encUrl;
 
         return '<hr class="vts-sep">'
-            . '<p class="vts-muted" style="font-size:12px;margin:0 0 8px"><strong>URL:</strong> '
+            . '<p class="vts-muted" style="font-size:12px;margin:0 0 8px"><strong>' . $this->t('url_label') . ':</strong> '
             . '<a href="' . $this->esc($url) . '" target="_blank" rel="noreferrer">' . $this->esc($url) . '</a></p>'
             . '<p style="margin:0 0 12px">'
             . '<a class="vts-btn vts-btn--ghost" href="' . $this->esc($rich) . '" target="_blank" rel="noreferrer">' . $this->t('btn_rich') . ' →</a> '
@@ -218,65 +201,35 @@ final class PreviewController
         return '<div class="vts-alert ' . $cls . '">' . $text . '</div>';
     }
 
-    private function csrfToken(): string
-    {
-        $container = System::getContainer();
-        $name = (string) $container->getParameter('contao.csrf_token_name');
-
-        return $container->get('contao.csrf.token_manager')->getToken($name)->getValue();
-    }
-
     private function esc(string $s): string
     {
         return htmlspecialchars($s, ENT_QUOTES);
     }
 
+    /**
+     * Loads this module's texts. Contao auto-loads only default and modules, so
+     * anything else is requested by name and resolved for the backend user's
+     * language, with Contao's own fallback behind it.
+     */
     private function initLang(): void
     {
-        $locale = 'de';
-        try {
-            $request = System::getContainer()->get('request_stack')->getCurrentRequest();
-            if ($request !== null) {
-                $locale = str_starts_with($request->getLocale(), 'en') ? 'en' : 'de';
-            }
-        } catch (\Throwable) {
-        }
+        System::loadLanguageFile(self::LANGUAGE_FILE);
 
-        $de = [
-            'title' => 'Schema.org', 'subtitle' => 'Strukturierte Daten (JSON-LD) für Suchmaschinen und KI-Antwortmaschinen.',
-            'license_locked' => 'Dieses Plugin ist lizenzpflichtig. Bitte Lizenzschlüssel eingeben, um die JSON-LD-Ausgabe zu aktivieren.',
-            'license_h' => 'Lizenz aktivieren', 'license_d' => 'Der Schlüssel wird an den V&T-Lizenzserver geprüft und lokal zwischengespeichert.',
-            'license_key_label' => 'Lizenzschlüssel', 'license_btn' => 'Lizenz aktivieren',
-            'license_invalid' => 'Lizenzschlüssel ungültig oder abgelehnt.',
-            'license_cta' => 'Noch keine Lizenz?', 'license_active' => 'Lizenz aktiv',
-            'license_until' => 'gültig bis', 'license_lifetime' => 'unbegrenzt', 'license_bypass' => 'Lizenzprüfung lokal umgangen (SCHEMA_ORG_LICENSE_BYPASS). Nicht in Produktion verwenden.',
-            'preview_h' => 'JSON-LD Vorschau', 'preview_d' => 'Zeigt die für eine Seite generierten strukturierten Daten und verlinkt zu den Validatoren.',
-            'preview_page' => 'Seite', 'preview_choose' => '— bitte wählen —', 'preview_show' => 'Anzeigen',
-            'btn_rich' => 'Google Rich Results Test', 'btn_validator' => 'schema.org Validator',
-            'err_notfound' => 'Seite nicht gefunden.', 'err_nourl' => 'Für diesen Seitentyp lässt sich keine URL bilden.',
-            'empty' => 'Für diese Seite wird kein Schema ausgegeben (deaktiviert oder keine Daten konfiguriert).',
-        ];
-        $en = [
-            'title' => 'Schema.org', 'subtitle' => 'Structured data (JSON-LD) for search engines and AI answer engines.',
-            'license_locked' => 'This plugin requires a license. Enter your key to enable the JSON-LD output.',
-            'license_h' => 'Activate license', 'license_d' => 'The key is checked against the V&T license server and cached locally.',
-            'license_key_label' => 'License key', 'license_btn' => 'Activate license',
-            'license_invalid' => 'License key invalid or rejected.',
-            'license_cta' => 'No license yet?', 'license_active' => 'License active',
-            'license_until' => 'valid until', 'license_lifetime' => 'lifetime', 'license_bypass' => 'License check bypassed locally (SCHEMA_ORG_LICENSE_BYPASS). Do not use in production.',
-            'preview_h' => 'JSON-LD preview', 'preview_d' => 'Shows the structured data generated for a page and links to the validators.',
-            'preview_page' => 'Page', 'preview_choose' => '— please choose —', 'preview_show' => 'Show',
-            'btn_rich' => 'Google Rich Results Test', 'btn_validator' => 'schema.org validator',
-            'err_notfound' => 'Page not found.', 'err_nourl' => 'No URL can be built for this page type.',
-            'empty' => 'No schema is emitted for this page (disabled or nothing configured).',
-        ];
+        $strings = $GLOBALS['TL_LANG'][self::LANGUAGE_FILE] ?? [];
 
-        $this->lang = 'en' === $locale ? $en : $de;
+        $this->lang = \is_array($strings) ? $strings : [];
     }
 
+    /**
+     * A missing translation shows its key rather than an invented sentence, so
+     * the gap is visible instead of being papered over. This is what Contao
+     * itself does for legends and labels.
+     */
     private function t(string $key): string
     {
-        return $this->lang[$key] ?? $key;
+        $value = $this->lang[$key] ?? null;
+
+        return \is_string($value) && $value !== '' ? $value : $key;
     }
 
     private function styles(): string
@@ -290,7 +243,6 @@ final class PreviewController
 #vtschema a{color:var(--vt-accent);text-decoration:none}
 #vtschema a:hover{text-decoration:underline}
 #vtschema .vts-muted{opacity:.65}
-#vtschema .vts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;margin:0 0 20px}
 #vtschema .vts-card{background:var(--vt-bg);border:1px solid var(--vt-bd);border-radius:var(--vt-r);padding:18px 18px 20px;display:flex;flex-direction:column;margin:0 0 18px}
 #vtschema .vts-card-h{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:15px;font-weight:650}
 #vtschema .vts-card-h::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--vt-accent);flex:0 0 9px}

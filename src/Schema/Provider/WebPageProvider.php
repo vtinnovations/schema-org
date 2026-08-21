@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-/**
- * @package   vtinnovations/schema-org
- * @author    V&T Innovations
- * @license   LGPL-3.0-or-later
- * @copyright V&T Innovations 2026
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
  */
 
 namespace VTinnovations\SchemaOrg\Schema\Provider;
@@ -55,8 +57,11 @@ final class WebPageProvider implements NodeProviderInterface
             '@id' => $ctx->webPageId(),
             'url' => $ctx->pageUrl,
             'name' => $name,
-            'inLanguage' => $ctx->language(),
         ];
+
+        if ($ctx->language() !== '') {
+            $node['inLanguage'] = $ctx->language();
+        }
 
         $description = trim((string) $page->description);
         if ($description !== '') {

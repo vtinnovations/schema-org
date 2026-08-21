@@ -2,5 +2,14 @@
 
 declare(strict_types=1);
 
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
+ */
+
 $GLOBALS['TL_LANG']['MOD']['schema_org'] = 'Schema.org';
-$GLOBALS['TL_LANG']['MOD']['schema'] = ['Schema.org', 'License, JSON-LD preview and validation'];
+$GLOBALS['TL_LANG']['MOD']['schema'] = ['Schema.org', 'JSON-LD preview and validation (the licence is managed in Settings)'];

@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-/**
- * @package   vtinnovations/schema-org
- * @author    V&T Innovations
- * @license   LGPL-3.0-or-later
- * @copyright V&T Innovations 2026
+/*
+ * Schema.org Structured Data
+ *
+ * Package: vtinnovations/schema-org
+ * Copyright: V&T Innovations
+ * Licence: LGPL-3.0-or-later
+ * Website: https://www.v-t.one
  */
 
 namespace VTinnovations\SchemaOrg\Schema\Provider;
@@ -70,13 +72,18 @@ final class FaqProvider implements NodeProviderInterface
 
         $faqId = $ctx->pageUrl . '#faqpage';
 
-        $graph->add([
+        $faqNode = [
             '@type' => 'FAQPage',
             '@id' => $faqId,
             'url' => $ctx->pageUrl,
-            'inLanguage' => $ctx->language(),
             'mainEntity' => $questions,
-        ]);
+        ];
+
+        if ($ctx->language() !== '') {
+            $faqNode['inLanguage'] = $ctx->language();
+        }
+
+        $graph->add($faqNode);
 
         $graph->add([
             '@id' => $ctx->webPageId(),
