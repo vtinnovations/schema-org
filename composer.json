@@ -3,10 +3,9 @@
     "type": "contao-bundle",
     "description": "Schema.org Structured Data — automatic JSON-LD (@graph) for Contao 5, tuned for AI search engines (GEO/AEO)",
     "license": "LGPL-3.0-or-later",
-    "version": "2.0.0",
     "authors": [
         {
-            "name": "V&T Innovations"
+            "name": "V&T Innovations Team"
         }
     ],
     "require": {
